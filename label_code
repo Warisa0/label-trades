@@ -1,0 +1,49 @@
+ import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report
+import warnings
+
+warnings.filterwarnings("ignore")
+
+# Load dataset (Replace with actual path or API call)
+df = pd.read_csv("ApeCoin.csv")  # Columns: Date, Open, High, Low, Close, Volume, Trade Outcome
+
+# Convert Date column to datetime
+df['Date'] = pd.to_datetime(df['Date'])
+df.sort_values(by="Date", inplace=True)
+
+# Feature Engineering
+df['Price Change %'] = (df['Close'] - df['Open']) / df['Open'] * 100
+df['High-Low %'] = (df['High'] - df['Low']) / df['Low'] * 100
+df['Volatility'] = df['Close'].rolling(window=10).std()
+
+# Drop NaN values
+df.dropna(inplace=True)
+
+# Define features and target
+X = df[['Price Change %', 'High-Low %', 'Volume', 'Volatility']]
+y = df['Trade Outcome'].map({"Good": 1, "Bad": 0})  # Convert labels to binary
+
+# Split dataset
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Train Model
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+# Predict and Evaluate
+y_pred = model.predict(X_test)
+print("Model Accuracy:", accuracy_score(y_test, y_pred))
+print(classification_report(y_test, y_pred))
+
+# Feature Importance
+plt.figure(figsize=(8, 5))
+sns.barplot(x=model.feature_importances_, y=X.columns)
+plt.title("Feature Importance in Trade Classification")
+plt.xlabel("Importance Score")
+plt.ylabel("Feature")
+plt.show()
